@@ -161,7 +161,7 @@ test('upload failure prevents inserting a record', async () => {
 });
 
 test('PATCH rejects invalid IDs and non-boolean values, returns 404 for missing item', async () => {
-  for (const payload of [null, {}, { id: 'invalid', returned: true }, { id, returned: 'true' }, { id, returned: 1 }]) {
+  for (const payload of [null, {}, { id: [id], returned: true }, { id: 'invalid', returned: true }, { id, returned: 'true' }, { id, returned: 1 }]) {
     assert.equal((await fixture().api.PATCH(patch(payload))).status, 400);
   }
   assert.equal((await fixture().api.PATCH(patch({ id, returned: true }))).status, 404);

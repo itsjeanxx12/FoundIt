@@ -7,7 +7,7 @@ const port = 3187;
 const origin = `http://127.0.0.1:${port}`;
 let output = '';
 const child = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-H', '127.0.0.1', '-p', String(port)], {
-  env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1', SUPABASE_URL: '', SUPABASE_SECRET_KEY: '', STAFF_PASSWORD: 'smoke-test-only-password' },
+  env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1', SUPABASE_URL: '', SUPABASE_SECRET_KEY: '', STAFF_PASSWORD: 'smoke-only-long-random-password-123456' },
   stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
 });
 child.stdout.on('data', (chunk) => { output += chunk; });
@@ -26,22 +26,25 @@ try {
   }
   assert.ok(ready, 'production server must start');
   const html = await (await fetch(origin)).text();
-  assert.ok(html.includes('testing page'));
+  assert.ok(html.includes('Found items'));
   assert.ok(html.includes('School reception'));
-  assert.ok(!html.includes('smoke-test-only-password'), 'staff password must not appear in HTML');
+  assert.ok(!html.includes('smoke-only-long-random-password-123456'), 'staff password must not appear in HTML');
   let response = await fetch(`${origin}/api/items`);
   assert.equal(response.status, 503, 'GET without Supabase config fails cleanly');
+  assert.equal(response.headers.get('x-frame-options'), 'DENY');
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(response.headers.get('x-powered-by'), null);
   assert.equal(response.headers.get('cache-control'), 'no-store');
   for (const method of ['POST', 'PATCH']) {
     response = await fetch(`${origin}/api/items`, { method, headers: { 'x-staff-password': 'wrong' } });
     assert.equal(response.status, 401, `${method} rejects incorrect staff password`);
   }
   response = await fetch(`${origin}/api/items`, { method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'x-staff-password': 'smoke-test-only-password' },
+    headers: { 'Content-Type': 'application/json', 'x-staff-password': 'smoke-only-long-random-password-123456' },
     body: JSON.stringify({ id: 'bad', returned: 'true' }) });
   assert.equal(response.status, 400, 'authenticated request validates inputs');
   response = await fetch(`${origin}/api/items`, { method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'x-staff-password': 'smoke-test-only-password' },
+    headers: { 'Content-Type': 'application/json', 'x-staff-password': 'smoke-only-long-random-password-123456' },
     body: JSON.stringify({ id: 'a0000000-0000-4000-8000-000000000001', returned: true }) });
   assert.equal(response.status, 503, 'valid request without Supabase fails cleanly');
   response = await fetch(`${origin}/api/items`, { method: 'DELETE' });

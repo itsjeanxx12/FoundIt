@@ -1,67 +1,103 @@
 # FoundIt
 
-**FoundIt is a school lost-and-found app that helps staff post items and makes it easier for students and families to find where to collect them.**
+FoundIt is a small school lost-and-found app. Students and families can browse
+found items, while staff can post items and mark them returned.
 
-Found items appear in one public list with a photo, description, category, and date. Staff can add an item and mark it returned. The collection point for this version is School reception.
+## What it supports
 
-## Features
-
-- Browse recently found items and their photos
-- Add an item with a description, category, date, and photo
-- Mark an item as returned
-- Store item details and photos between visits
+- Browse, search, sort, and filter found items
+- View item photos, descriptions, dates, categories, and collection locations
+- Include or hide returned items
+- Post a found item with a JPEG, PNG, or WebP photo up to 2 MiB
+- Mark an item returned or awaiting collection
 - Protect staff actions with a shared password
 
-## How it works
+The current version does not include online ownership claims, pickup approvals,
+individual staff accounts, or item deletion. Collection is handled at School
+reception.
 
-FoundIt uses Next.js for the app and API, Supabase for the item list and photos, and can be deployed to Vercel. Browsing is public. Adding items and changing their status require the staff password.
+## Tech stack
+
+- Next.js 16 and React 19
+- Supabase Postgres and Storage
+- Node.js 22.9 or later
+
+The browser never receives Supabase credentials. Public reads and staff writes
+go through the Next.js API, and staff writes require `STAFF_PASSWORD`.
 
 ## Run locally
 
-You will need Node.js 22 or later and a Supabase project.
+Install dependencies and start the development server:
 
 ```bash
-npm install
-```
-
-Copy `.env.example` to `.env.local`, then add your Supabase project URL, a server secret key, and a staff password:
-
-```env
-SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-SUPABASE_SECRET_KEY=YOUR_SERVER_SECRET_KEY
-STAFF_PASSWORD=YOUR_STAFF_PASSWORD
-```
-
-The secret key and password must stay server-side. Do not add a `NEXT_PUBLIC_` prefix or commit `.env.local`.
-
-In your Supabase project's SQL Editor, run [`supabase/migrations/202610190001_school_lost_found.sql`](supabase/migrations/202610190001_school_lost_found.sql). This creates the items table and the public `item-photos` bucket. Run [`supabase/verify.sql`](supabase/verify.sql) to check the access settings.
-
-Start FoundIt:
-
-```bash
+npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Use the staff password in the page to add items or update their status. Items are saved to Supabase, so they remain after a refresh or restart.
+Open [http://localhost:3000](http://localhost:3000). The interface loads without
+Supabase, but the item list reports a setup error until the environment variables
+and database are configured.
 
-## Items and photos
+## Connect Supabase
 
-Each item has a title, description, category, date found, photo, collection point, returned status, and date it was added. Categories are Clothing, Electronics, Books, Accessories, and Other. The collection point is School reception.
+1. Copy the environment template:
 
-Photos can be JPEG, PNG, or WebP files up to 2 MiB. Photos are public. Upload item-only photos without student faces, names, or ID cards, and do not include private information in descriptions.
+   ```bash
+   cp .env.example .env.local
+   ```
 
-## Deploy to Vercel
+2. Add your project URL, server secret, and a random staff password:
 
-Import this repository into a Vercel project. Set `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `STAFF_PASSWORD` in the project's server-side environment variables, then deploy. Use the included `vercel.app` address. No custom domain is required. See [Vercel's Next.js deployment guide](https://vercel.com/docs/frameworks/nextjs) for project setup.
+   ```env
+   SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   SUPABASE_SECRET_KEY=YOUR_SERVER_SECRET_KEY
+   STAFF_PASSWORD=YOUR_RANDOM_PASSWORD_AT_LEAST_24_CHARACTERS
+   ```
 
-## Development
+   Generate a suitable staff password with:
+
+   ```bash
+   node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+   ```
+
+3. Run
+   [`supabase/migrations/202610190001_school_lost_found.sql`](supabase/migrations/202610190001_school_lost_found.sql)
+   in the Supabase SQL Editor.
+
+4. Verify the connection and schema:
+
+   ```bash
+   npm run check:setup
+   ```
+
+Keep `.env.local`, the Supabase secret key, and the staff password private. Do
+not use `NEXT_PUBLIC_` prefixes for them. See
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for complete setup, verification,
+deployment, and troubleshooting instructions.
+
+## Development checks
+
+```bash
+npm run check
+```
+
+This runs the API tests, production build, and HTTP smoke test. The automated
+tests use a simulated Supabase client, so they do not require project credentials.
+
+You can also run the checks separately:
 
 ```bash
 npm test
 npm run build
-npm run start
+npm run test:smoke
 ```
 
-`npm run test:smoke` checks the production page and API using a temporary local server. The automated tests use a simulated Supabase connection; run FoundIt with your own Supabase project to check saved items and photos.
+## Deploy
 
-FoundIt is still being validated with school staff. The team needs to confirm that staff would use it and that School reception is the right collection point.
+Import the repository into Vercel as a Next.js project. Add `SUPABASE_URL`,
+`SUPABASE_SECRET_KEY`, and `STAFF_PASSWORD` as server-side environment variables,
+then deploy. Do not configure the project as a static export because the API
+routes must run on the server.
+
+Photos and descriptions are public. Upload item-only photos without student
+faces, names, ID cards, or other private information.

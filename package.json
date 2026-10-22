@@ -8,10 +8,12 @@
     "build": "next build",
     "start": "next start",
     "test": "node --test",
-    "test:smoke": "node scripts/smoke.mjs"
+    "test:smoke": "node scripts/smoke.mjs",
+    "check:setup": "node --env-file-if-exists=.env.local scripts/check-setup.mjs",
+    "check": "npm test && npm run build && npm run test:smoke"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.9.0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
